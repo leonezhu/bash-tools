@@ -7,7 +7,7 @@ macOS zsh command enhancement tool for quick navigation and opening via path ali
 1. Clone the repository to your local machine:
 
 ```bash
-git clone https://github.com/yourusername/bash-tools.git ~/Documents/GitHub/bash-tools
+git clone https://github.com/leonezhu/bash-tools.git ~/Documents/GitHub/bash-tools
 ```
 
 2. Add this line to your `~/.zshrc`:
