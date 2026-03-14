@@ -4,13 +4,19 @@ macOS zsh command enhancement tool for quick navigation and opening via path ali
 
 ## Installation
 
-Add this line to your `~/.zshrc`:
+1. Clone the repository to your local machine:
 
 ```bash
-source /path/to/bash-tools/init.sh
+git clone https://github.com/yourusername/bash-tools.git ~/Documents/GitHub/bash-tools
 ```
 
-Then reload your configuration:
+2. Add this line to your `~/.zshrc`:
+
+```bash
+source ~/Documents/GitHub/bash-tools/init.sh
+```
+
+3. Reload your configuration:
 
 ```bash
 source ~/.zshrc
@@ -22,16 +28,40 @@ source ~/.zshrc
 
 ```bash
 to proj                   # Jump to directory by alias
-to add proj ~/projects    # Add directory alias
+to add proj ~/projects    # Add directory alias (absolute path)
+to add config ./.config   # Add relative path alias (works in any directory)
 to rm proj                # Remove alias
 to ls                     # List all directory aliases
 ```
+
+#### Relative Path Aliases
+
+Paths starting with `.` or `..` are stored as **relative aliases**, resolved against the current working directory. This allows reusing the same alias across different projects:
+
+```bash
+# Add a relative alias once
+to add exclude ./.git/info/exclude
+
+# Use it in any git project
+cd ~/projects/project-a
+to exclude    # Opens ~/projects/project-a/.git/info/exclude
+
+cd ~/projects/project-b
+to exclude    # Opens ~/projects/project-b/.git/info/exclude
+```
+
+This is especially useful for:
+- `.git/info/exclude` - Git exclude file
+- `./README.md` - Project readme
+- `./package.json` - npm config
+- `../` - Parent directory
 
 ### dev - Open in VS Code
 
 ```bash
 dev proj                  # Open directory in VS Code
 dev add proj ~/projects   # Add directory alias
+dev add readme ./README.md  # Add relative path (opens file directly)
 dev rm proj               # Remove alias
 dev ls                    # List aliases
 ```
@@ -41,6 +71,7 @@ dev ls                    # List aliases
 ```bash
 file proj                 # Open directory in Finder
 file add proj ~/projects  # Add directory alias
+file add exclude ./.git/info/exclude  # Add relative path (reveals file)
 file rm proj              # Remove alias
 file ls                   # List aliases
 ```
@@ -61,9 +92,15 @@ Aliases are stored in `~/.alias_map`:
 ```text
 dir:proj:/Users/xiong/projects
 dir:work:/Users/xiong/Documents/work
+rel:exclude:./.git/info/exclude
+rel:config:./.config
 url:gh:https://github.com
 url:google:https://google.com
 ```
+
+- `dir:` - Absolute path aliases
+- `rel:` - Relative path aliases (resolved against current directory)
+- `url:` - URL aliases
 
 Customize storage location via environment variable:
 
