@@ -2,7 +2,7 @@
 # to.sh - Directory navigation command
 #
 # Usage:
-#   to <alias>      - Jump to directory by alias
+#   to <alias|path> - Jump to directory by alias or full path
 #   to add <alias> <path> - Add directory alias (./path stored as relative)
 #   to rm <alias>   - Remove directory alias
 #   to ls           - List all directory aliases
@@ -12,7 +12,7 @@ to() {
 
   case "$cmd" in
     "")
-      echo "Usage: to <alias> | to add <alias> <path> | to rm <alias> | to ls" >&2
+      echo "Usage: to <alias|path> | to add <alias> <path> | to rm <alias> | to ls" >&2
       return 1
       ;;
     add)
@@ -27,10 +27,10 @@ to() {
       _list_aliases "rel"
       ;;
     help|--help|-h)
-      echo "Directory navigation with aliases"
+      echo "Directory navigation with aliases or full paths"
       echo ""
       echo "Usage:"
-      echo "  to <alias>           - Jump to directory by alias"
+      echo "  to <alias|path>      - Jump to directory by alias or full path"
       echo "  to add <alias> <dir> - Add directory alias"
       echo "                        (paths starting with . are stored as relative)"
       echo "  to rm <alias>        - Remove directory alias"
@@ -38,7 +38,15 @@ to() {
       ;;
     *)
       local target
-      target="$(_resolve_alias "$cmd")"
+
+      # Check if it's a full path (starts with /, ./, ~, or ../)
+      if [[ "$cmd" == /* || "$cmd" == .* || "$cmd" == ~* ]]; then
+        target="${cmd/#\~/$HOME}"
+      else
+        # Try to resolve alias
+        target="$(_resolve_alias "$cmd")"
+      fi
+
       if [[ -n "$target" ]]; then
         if [[ -e "$target" ]]; then
           # If target is a file, cd to its parent directory
