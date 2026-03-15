@@ -90,6 +90,37 @@ web rm gh                      # Remove alias
 web ls                         # List all URL aliases
 ```
 
+### todo - Task Management
+
+Simple task management with priorities and groups.
+
+```bash
+todo                           # List pending tasks (todo + doing)
+todo ls                        # List all pending tasks
+todo ls done                   # List completed tasks
+todo ls p1                     # List high priority tasks
+todo ls @work                  # List tasks in @work group
+todo ls all                    # List all tasks
+
+todo add "Finish report"       # Add task (default: p2)
+todo add "Urgent bug" p1       # Add high priority task
+todo add "Meeting" p2 @work    # Add task with group
+
+todo doing 1                   # Mark task #1 as in progress
+todo done 1                    # Mark task #1 as done
+todo todo 1                    # Reset task #1 to todo
+
+todo edit 1 "New content"      # Edit task content
+todo rm 1                      # Delete task #1
+
+todo clear                     # Clear all completed tasks
+todo clear all                 # Clear all tasks
+```
+
+**Priority levels:** `p1` (high), `p2` (medium), `p3` (low)
+
+**Task status:** `todo` → `doing` → `done`
+
 ## Auto-Alias Feature
 
 When using full paths or URLs, aliases are automatically created:
@@ -122,10 +153,22 @@ url:google:https://google.com
 - `rel:` - Relative path aliases (resolved against current directory)
 - `url:` - URL aliases
 
-Customize storage location via environment variable:
+Tasks are stored in `~/.todo_list.json`:
+
+```json
+{
+  "tasks": [
+    {"id": 1, "content": "Finish report", "priority": "p1", "status": "doing", "group": "@work", ...}
+  ],
+  "nextId": 2
+}
+```
+
+Customize storage locations via environment variables:
 
 ```bash
 export ALIAS_MAP_FILE=~/.config/bash-tools/aliases
+export TODO_FILE=~/.config/bash-tools/todo.json
 ```
 
 ## Tab Completion
@@ -149,6 +192,7 @@ bash-tools/
 │   ├── dev.sh           # dev command
 │   ├── file.sh          # file command
 │   ├── web.sh           # web command
+│   ├── todo.sh          # todo command
 │   └── completion.sh    # zsh tab completion
 └── README.md
 ```

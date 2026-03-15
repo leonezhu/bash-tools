@@ -91,6 +91,90 @@ _url_alias_completion() {
   esac
 }
 
+# Todo command completion function
+_todo_completion() {
+  local -a subcommands priorities statuses tasks
+  local context state line
+
+  _arguments -C \
+    '1: :->cmds' \
+    '*::arg:->args'
+
+  # Subcommands
+  subcommands=(
+    'add:Add a new task'
+    'ls:List tasks'
+    'done:Mark task as done'
+    'doing:Mark task as in progress'
+    'rm:Delete a task'
+    'edit:Edit task content'
+    'clear:Clear tasks'
+    'help:Show help'
+  )
+
+  # Priorities
+  priorities=(
+    'p1:High priority'
+    'p2:Medium priority (default)'
+    'p3:Low priority'
+  )
+
+  # Statuses
+  statuses=(
+    'done:Completed tasks'
+    'p1:High priority tasks'
+    'p2:Medium priority tasks'
+    'p3:Low priority tasks'
+    'all:All tasks'
+  )
+
+  # Load tasks for ID completion
+  if [[ -f "$HOME/.todo_list.json" ]]; then
+    local id content
+    while IFS=$'\t' read -r id content; do
+      [[ -n "$id" ]] && tasks+=("$id:$content")
+    done < <(jq -r '.tasks[] | "\(.id)\t\(.content)"' "$HOME/.todo_list.json" 2>/dev/null)
+  fi
+
+  case $state in
+    cmds)
+      _describe 'subcommand' subcommands
+      ;;
+    args)
+      case $line[1] in
+        ls|list)
+          _describe 'filter' statuses
+          ;;
+        add)
+          if (( CURRENT == 2 )); then
+            _message "task content"
+          else
+            _describe 'priority' priorities
+          fi
+          ;;
+        done|doing|todo|rm|remove)
+          _describe 'task' tasks
+          ;;
+        edit)
+          if (( CURRENT == 2 )); then
+            _describe 'task' tasks
+          else
+            _message "new content"
+          fi
+          ;;
+        clear)
+          local -a clear_opts
+          clear_opts=(
+            'done:Clear completed tasks (default)'
+            'all:Clear all tasks'
+          )
+          _describe 'scope' clear_opts
+          ;;
+      esac
+      ;;
+  esac
+}
+
 # Sync command completion function
 _sync_completion() {
   local -a aliases actions subcommands
@@ -139,4 +223,6 @@ if type compdef &>/dev/null; then
   compdef _url_alias_completion web
   # Use -p to override existing completion for sync (which is a builtin)
   compdef -p _sync_completion sync 2>/dev/null || true
+  # Register todo completion
+  compdef _todo_completion todo 2>/dev/null || true
 fi

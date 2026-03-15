@@ -25,7 +25,7 @@ sync() {
       echo "Git sync command - commit and push changes"
       echo ""
       echo "Usage:"
-      echo "  sync <alias|path>        - Add all changes, commit, and push"
+      echo "  sync <alias|path>        - Add all changes, commit with timestamp, and push"
       echo "  sync <alias|path> status - Show git status"
       echo "  sync <alias|path> pull   - Pull latest changes from remote"
       echo "  sync ls                  - List all directory aliases"
@@ -34,6 +34,8 @@ sync() {
       echo "  sync myproject           - Use alias 'myproject'"
       echo "  sync ~/Projects/app      - Use full path"
       echo "  sync ./mydir             - Use relative path"
+      echo ""
+      echo "Commit message format: Auto sync: YYYY-MM-DD HH:MM:SS"
       ;;
     *)
       local target
@@ -104,14 +106,8 @@ sync() {
           echo "$has_changes"
           echo ""
 
-          # Get commit message
-          local commit_msg
-          read "commit_msg?Enter commit message (or press Enter for auto): "
-
-          if [[ -z "$commit_msg" ]]; then
-            # Generate auto commit message with timestamp
-            commit_msg="Auto sync: $(date '+%Y-%m-%d %H:%M:%S')"
-          fi
+          # Generate commit message with timestamp
+          local commit_msg="Auto sync: $(date '+%Y-%m-%d %H:%M:%S')"
 
           # Add, commit, and push
           (cd "$target" && git add -A && git commit -m "$commit_msg" && git push)
