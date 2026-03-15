@@ -91,10 +91,52 @@ _url_alias_completion() {
   esac
 }
 
+# Sync command completion function
+_sync_completion() {
+  local -a aliases actions subcommands
+  local context state line
+
+  _arguments -C \
+    '1: :->cmds' \
+    '2: :->actions'
+
+  # Subcommands
+  subcommands=(
+    'help:Show help'
+  )
+
+  # Actions for sync command
+  actions=(
+    'status:Show git status'
+    'pull:Pull latest changes from remote'
+    'push:Add, commit, and push (default)'
+  )
+
+  # Read directory aliases - format: "name:description"
+  if [[ -f "$ALIAS_MAP_FILE" ]]; then
+    local alias_part path_part
+    while IFS=: read -r type alias_part path_part; do
+      [[ "$type" == "dir" || "$type" == "rel" ]] && aliases+=("${alias_part}:${path_part}")
+    done < "$ALIAS_MAP_FILE"
+  fi
+
+  case $state in
+    cmds)
+      _describe 'subcommand' subcommands
+      _describe 'alias' aliases
+      ;;
+    actions)
+      _describe 'action' actions
+      ;;
+  esac
+}
+
 # Register completion functions (only when compdef is available)
 if type compdef &>/dev/null; then
   compdef _dir_alias_completion to
   compdef _dir_alias_completion dev
   compdef _dir_alias_completion file
   compdef _url_alias_completion web
+  # Use -p to override existing completion for sync (which is a builtin)
+  compdef -p _sync_completion sync 2>/dev/null || true
 fi

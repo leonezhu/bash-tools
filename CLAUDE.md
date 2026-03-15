@@ -2,7 +2,7 @@
 
 ## Alias Commands Convention
 
-All alias-based commands (`web`, `to`, `dev`, `file`) MUST support both aliases AND full paths/URLs directly.
+All alias-based commands (`web`, `to`, `dev`, `file`, `sync`) MUST support both aliases AND full paths/URLs directly.
 
 ### Pattern for Path-Based Commands (`to`, `dev`, `file`)
 
@@ -41,12 +41,13 @@ Aliases are skipped silently if they already exist.
 
 ### Commands Summary
 
-| Command | Purpose         | Alias | Full Path/URL         | Auto-Alias |
-|---------|-----------------|-------|-----------------------|------------|
-| `web`   | Open URL        | Yes   | http/https URLs       | Yes        |
-| `to`    | Navigate to dir | Yes   | /, ./, ~, ../         | Yes        |
-| `dev`   | Open in VS Code | Yes   | /, ./, ~, ../         | Yes        |
-| `file`  | Open in Finder  | Yes   | /, ./, ~, ../         | Yes        |
+| Command | Purpose              | Alias | Full Path/URL    | Auto-Alias |
+|---------|----------------------|-------|------------------|------------|
+| `web`   | Open URL             | Yes   | http/https URLs  | Yes        |
+| `to`    | Navigate to dir      | Yes   | /, ./, ~, ../    | Yes        |
+| `dev`   | Open in VS Code      | Yes   | /, ./, ~, ../    | Yes        |
+| `file`  | Open in Finder       | Yes   | /, ./, ~, ../    | Yes        |
+| `sync`  | Git add/commit/push  | Yes   | /, ./, ~, ../    | Yes        |
 
 ### When Adding New Alias Commands
 

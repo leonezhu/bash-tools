@@ -28,6 +28,7 @@ source "$BASH_TOOLS_DIR/lib/to.sh"
 source "$BASH_TOOLS_DIR/lib/dev.sh"
 source "$BASH_TOOLS_DIR/lib/file.sh"
 source "$BASH_TOOLS_DIR/lib/web.sh"
+source "$BASH_TOOLS_DIR/lib/sync.sh"
 
 # Load completion (zsh only)
 if [[ -n "${ZSH_VERSION:-}" ]]; then
