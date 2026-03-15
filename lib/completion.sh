@@ -1,6 +1,17 @@
 #!/bin/bash
 # completion.sh - zsh tab completion
 
+# Enable fuzzy matching for completions
+# - m:{a-z}={A-Z}: case-insensitive matching
+# - r:|[._-]=*: partial matching after separators (., _, -)
+# - l:|=* r:|=*: substring matching (match anywhere in the word)
+if [[ -n "$ZSH_VERSION" ]]; then
+  zstyle ':completion:*' matcher-list \
+    'm:{a-z}={A-Z}' \
+    'r:|[._-]=* r:|=*' \
+    'l:|=* r:|=*'
+fi
+
 # Directory alias completion function (for to/dev/file)
 _dir_alias_completion() {
   local -a aliases subcommands

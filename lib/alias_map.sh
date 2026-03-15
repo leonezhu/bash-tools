@@ -219,6 +219,10 @@ _extract_url_alias() {
   local url="$1"
   local path
 
+  # Remove protocol
+  url="${url#http://}"
+  url="${url#https://}"
+
   # Remove query parameters and fragments
   url="${url%%\?*}"
   url="${url%%#*}"
@@ -226,8 +230,23 @@ _extract_url_alias() {
   # Remove trailing slash
   url="${url%/}"
 
-  # Get the last path segment
-  path="${url##*/}"
+  # Get the last path segment (or full host if no path)
+  if [[ "$url" == */* ]]; then
+    # Has path, get last segment
+    path="${url##*/}"
+  else
+    # No path, use the host/domain
+    path="$url"
+  fi
+
+  # Clean up domain: remove www. prefix and common TLDs
+  path="${path#www.}"
+  path="${path%.com}"
+  path="${path%.net}"
+  path="${path%.org}"
+  path="${path%.io}"
+  path="${path%.dev}"
+  path="${path%.app}"
 
   # Return lowercase alias (compatible with bash and zsh)
   /usr/bin/tr '[:upper:]' '[:lower:]' <<< "$path"
