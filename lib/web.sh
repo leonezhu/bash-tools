@@ -40,8 +40,10 @@ web() {
     *)
       # Check if it's a full URL
       local url=""
+      local is_full_url=false
       if [[ "$cmd" == http://* || "$cmd" == https://* ]]; then
         url="$cmd"
+        is_full_url=true
       else
         # Try to get URL from alias
         url="$(_get_url_alias "$cmd")"
@@ -51,6 +53,11 @@ web() {
         echo "Unknown alias: $cmd" >&2
         echo "Use 'web add $cmd <url>' to add it." >&2
         return 1
+      fi
+
+      # Auto-add alias for full URLs
+      if [[ "$is_full_url" == true ]]; then
+        _auto_add_url_alias "$url"
       fi
 
       # Check for "to <path>" syntax

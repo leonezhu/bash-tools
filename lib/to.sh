@@ -38,16 +38,23 @@ to() {
       ;;
     *)
       local target
+      local is_full_path=false
 
       # Check if it's a full path (starts with /, ./, ~, or ../)
       if [[ "$cmd" == /* || "$cmd" == .* || "$cmd" == ~* ]]; then
         target="${cmd/#\~/$HOME}"
+        is_full_path=true
       else
         # Try to resolve alias
         target="$(_resolve_alias "$cmd")"
       fi
 
       if [[ -n "$target" ]]; then
+        # Auto-add alias for full paths
+        if [[ "$is_full_path" == true ]]; then
+          _auto_add_dir_alias "$cmd"
+        fi
+
         if [[ -e "$target" ]]; then
           # If target is a file, cd to its parent directory
           if [[ -f "$target" ]]; then

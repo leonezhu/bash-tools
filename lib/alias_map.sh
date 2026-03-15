@@ -212,6 +212,121 @@ _remove_alias() {
   return 0
 }
 
+# Extract alias name from URL (last path segment, cleaned, lowercase)
+# Usage: _extract_url_alias <url>
+# Returns: suggested alias name (lowercase)
+_extract_url_alias() {
+  local url="$1"
+  local path
+
+  # Remove query parameters and fragments
+  url="${url%%\?*}"
+  url="${url%%#*}"
+
+  # Remove trailing slash
+  url="${url%/}"
+
+  # Get the last path segment
+  path="${url##*/}"
+
+  # Return lowercase alias (compatible with bash and zsh)
+  /usr/bin/tr '[:upper:]' '[:lower:]' <<< "$path"
+}
+
+# Extract alias name from path (last path segment, lowercase)
+# Usage: _extract_path_alias <path>
+# Returns: suggested alias name (lowercase)
+_extract_path_alias() {
+  local path="$1"
+
+  # Remove trailing slash
+  path="${path%/}"
+
+  # Get the last path segment
+  path="${path##*/}"
+
+  # Return lowercase alias (compatible with bash and zsh)
+  /usr/bin/tr '[:upper:]' '[:lower:]' <<< "$path"
+}
+
+# Auto-add URL alias (silent, skips if exists)
+# Usage: _auto_add_url_alias <url>
+# Returns: 0 if added, 1 if skipped (already exists)
+_auto_add_url_alias() {
+  local url="$1"
+  local alias
+  local clean_url
+
+  if [[ -z "$url" ]]; then
+    return 1
+  fi
+
+  # Clean URL: remove query params and fragments
+  clean_url="${url%%\?*}"
+  clean_url="${clean_url%%#*}"
+  clean_url="${clean_url%/}"
+
+  alias=$(_extract_url_alias "$url")
+
+  if [[ -z "$alias" ]]; then
+    return 1
+  fi
+
+  # Check if already exists
+  if _alias_exists "url" "$alias"; then
+    return 1
+  fi
+
+  # Add silently
+  _ensure_alias_file
+  echo "url:${alias}:${clean_url}" >> "$ALIAS_MAP_FILE"
+  echo "Auto-added URL alias: $alias -> $clean_url"
+  return 0
+}
+
+# Auto-add directory alias (silent, skips if exists)
+# Usage: _auto_add_dir_alias <path>
+# Returns: 0 if added, 1 if skipped (already exists)
+_auto_add_dir_alias() {
+  local path="$1"
+  local alias
+
+  if [[ -z "$path" ]]; then
+    return 1
+  fi
+
+  # Expand ~
+  path="${path/#\~/$HOME}"
+
+  alias=$(_extract_path_alias "$path")
+
+  if [[ -z "$alias" ]]; then
+    return 1
+  fi
+
+  # Determine type (dir or rel)
+  local type="dir"
+  local stored_path="$path"
+  if [[ "$path" == .* || "$path" == ..* ]]; then
+    type="rel"
+    stored_path="$path"
+  elif [[ "$path" != /* ]]; then
+    # Convert to absolute path
+    stored_path="$(cd "$(dirname "$path")" 2>/dev/null && pwd)/$(basename "$path")"
+  fi
+
+  # Check if already exists (check both dir and rel)
+  if _alias_exists "dir" "$alias" || _alias_exists "rel" "$alias"; then
+    return 1
+  fi
+
+  # Add silently
+  _ensure_alias_file
+  echo "${type}:${alias}:${stored_path}" >> "$ALIAS_MAP_FILE"
+  echo "Auto-added ${type} alias: $alias -> $stored_path"
+  return 0
+}
+
 # List all aliases of specified type
 # Usage: _list_aliases <type>
 #   For "dir" type, also shows "rel" aliases

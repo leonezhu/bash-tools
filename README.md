@@ -28,6 +28,7 @@ source ~/.zshrc
 
 ```bash
 to proj                   # Jump to directory by alias
+to ~/projects/myapp       # Jump to full path (auto-creates "myapp" alias)
 to add proj ~/projects    # Add directory alias (absolute path)
 to add config ./.config   # Add relative path alias (works in any directory)
 to rm proj                # Remove alias
@@ -60,6 +61,7 @@ This is especially useful for:
 
 ```bash
 dev proj                  # Open directory in VS Code
+dev ~/projects/myapp      # Open full path (auto-creates "myapp" alias)
 dev add proj ~/projects   # Add directory alias
 dev add readme ./README.md  # Add relative path (opens file directly)
 dev rm proj               # Remove alias
@@ -70,6 +72,7 @@ dev ls                    # List aliases
 
 ```bash
 file proj                 # Open directory in Finder
+file ~/projects/myapp     # Open full path (auto-creates "myapp" alias)
 file add proj ~/projects  # Add directory alias
 file add exclude ./.git/info/exclude  # Add relative path (reveals file)
 file rm proj              # Remove alias
@@ -80,10 +83,27 @@ file ls                   # List aliases
 
 ```bash
 web gh                         # Open URL in browser
+web https://github.com/user/repo  # Open full URL (auto-creates "repo" alias)
+web https://example.com/page?query=1  # Strips query params, creates "page" alias
 web add gh https://github.com  # Add URL alias
 web rm gh                      # Remove alias
 web ls                         # List all URL aliases
 ```
+
+## Auto-Alias Feature
+
+When using full paths or URLs, aliases are automatically created:
+
+| Input                                         | Auto-Alias |
+|-----------------------------------------------|------------|
+| `to ~/Projects/MyApp`                         | `myapp`    |
+| `dev ../ReactApp`                             | `reactapp` |
+| `web https://github.com/user/DotFiles`        | `dotfiles` |
+| `web https://example.com/page?tab=readme`     | `page`     |
+
+- Aliases are **lowercase** by default
+- URL query parameters (`?xxx`) and fragments (`#xxx`) are stripped
+- Duplicate aliases are **silently skipped**
 
 ## Data Storage
 
