@@ -226,6 +226,55 @@ _sync_completion() {
   esac
 }
 
+# MD command completion function
+_md_completion() {
+  local -a aliases subcommands
+  local context state line
+
+  _arguments -C \
+    '1: :->cmds' \
+    '*::arg:->args'
+
+  # Subcommands
+  subcommands=(
+    'add:Add a new markdown file alias'
+    'rm:Remove an alias'
+    'ls:List all aliases'
+    'stop:Stop the preview server'
+    'help:Show help'
+  )
+
+  # Read directory aliases - md uses dir and rel type aliases
+  if [[ -f "$ALIAS_MAP_FILE" ]]; then
+    local alias_part path_part
+    while IFS=: read -r type alias_part path_part; do
+      [[ "$type" == "dir" || "$type" == "rel" ]] && aliases+=("${alias_part}:${path_part}")
+    done < "$ALIAS_MAP_FILE"
+  fi
+
+  case $state in
+    cmds)
+      _describe 'subcommand' subcommands
+      _describe 'alias' aliases
+      _files -g '*.md'
+      ;;
+    args)
+      case $line[1] in
+        rm)
+          _describe 'alias' aliases
+          ;;
+        add)
+          if (( CURRENT == 2 )); then
+            _message "alias name"
+          else
+            _files -g '*.md'
+          fi
+          ;;
+      esac
+      ;;
+  esac
+}
+
 # Register completion functions (only when compdef is available)
 if type compdef &>/dev/null; then
   compdef _dir_alias_completion to
@@ -236,4 +285,6 @@ if type compdef &>/dev/null; then
   compdef -p _sync_completion sync 2>/dev/null || true
   # Register todo completion
   compdef _todo_completion todo 2>/dev/null || true
+  # Register md completion
+  compdef _md_completion md
 fi

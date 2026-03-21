@@ -30,6 +30,7 @@ source "$BASH_TOOLS_DIR/lib/file.sh"
 source "$BASH_TOOLS_DIR/lib/web.sh"
 source "$BASH_TOOLS_DIR/lib/sync.sh"
 source "$BASH_TOOLS_DIR/lib/todo.sh"
+source "$BASH_TOOLS_DIR/lib/md.sh"
 
 # Load completion (zsh only)
 if [[ -n "${ZSH_VERSION:-}" ]]; then
