@@ -48,23 +48,27 @@ Aliases are skipped silently if they already exist.
 | `dev`   | Open in VS Code      | Yes   | /, ./, ~, ../    | Yes        |
 | `file`  | Open in Finder       | Yes   | /, ./, ~, ../    | Yes        |
 | `sync`  | Git add/commit/push  | Yes   | /, ./, ~, ../    | Yes        |
+| `md`    | View markdown in browser | Yes | /, ./, ~, ../  | Yes        |
+| `path`  | Copy path to clipboard | Yes | /, ./, ~, ../  | Yes        |
 | `run`   | Execute saved cmd    | Yes   | N/A              | N/A        |
 
 ### Search Subcommand (`s`)
 
-Directory-based commands (`to`, `dev`, `file`, `md`) support a `s` subcommand for fuzzy file search and execution:
+Directory-based commands (`to`, `dev`, `file`, `md`, `path`) support a `s` subcommand for fuzzy file search and execution:
 
 ```bash
 to s [alias|path] [pattern]    # Search and execute files in directory
 dev s [alias|path] [pattern]   # Search and execute files in directory
 file s [alias|path] [pattern]  # Search and execute files in directory
 md s [alias|path] [pattern]    # Search markdown files only
+path s [alias|path] [pattern]  # Search and copy file path to clipboard
 ```
 
 Examples:
 - `file s .` - Search files in current directory
 - `dev s myproject api` - Search files with "api" pattern in myproject alias
 - `md s . readme` - Search markdown files with "readme" pattern
+- `path s . config` - Search files and copy selected path to clipboard
 
 ### When Adding New Alias Commands
 

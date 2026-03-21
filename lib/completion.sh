@@ -338,6 +338,7 @@ if type compdef &>/dev/null; then
   compdef _dir_alias_completion to
   compdef _dir_alias_completion dev
   compdef _dir_alias_completion file
+  compdef _dir_alias_completion path
   compdef _url_alias_completion web
   # Use -p to override existing completion for sync (which is a builtin)
   compdef -p _sync_completion sync 2>/dev/null || true
