@@ -22,6 +22,7 @@ fi
 
 # Load core library
 source "$BASH_TOOLS_DIR/lib/alias_map.sh"
+source "$BASH_TOOLS_DIR/lib/search.sh"
 
 # Load commands
 source "$BASH_TOOLS_DIR/lib/to.sh"
@@ -31,6 +32,7 @@ source "$BASH_TOOLS_DIR/lib/web.sh"
 source "$BASH_TOOLS_DIR/lib/sync.sh"
 source "$BASH_TOOLS_DIR/lib/todo.sh"
 source "$BASH_TOOLS_DIR/lib/md.sh"
+source "$BASH_TOOLS_DIR/lib/run.sh"
 
 # Load completion (zsh only)
 if [[ -n "${ZSH_VERSION:-}" ]]; then

@@ -90,6 +90,29 @@ _resolve_alias() {
   return 1
 }
 
+# Get command by alias
+# Usage: _get_cmd_alias <alias>
+# Returns: command if exists, empty otherwise
+_get_cmd_alias() {
+  local alias="$1"
+  if [[ -z "$alias" ]]; then
+    return 1
+  fi
+  _ensure_alias_file
+  local line t a value
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    [[ "$line" == cmd:${alias}:* ]] || continue
+    # Parse: cmd:alias:command string
+    t="${line%%:*}"
+    line="${line#*:}"
+    a="${line%%:*}"
+    value="${line#*:}"
+    echo "$value"
+    return 0
+  done < "$ALIAS_MAP_FILE"
+  return 1
+}
+
 # Get URL by alias
 # Usage: _get_url_alias <alias>
 # Returns: URL if exists, empty otherwise
@@ -305,7 +328,7 @@ _auto_add_url_alias() {
 
 # Auto-add directory alias (silent, skips if exists)
 # Usage: _auto_add_dir_alias <path>
-# Returns: 0 if added, 1 if skipped (already exists)
+# Returns: 0 if added, 1 if skipped (already exists or invalid)
 _auto_add_dir_alias() {
   local path="$1"
   local alias
@@ -313,6 +336,12 @@ _auto_add_dir_alias() {
   if [[ -z "$path" ]]; then
     return 1
   fi
+
+  # Skip special paths that shouldn't be aliased
+  # ., .., ./, ../, and similar relative paths have no persistent meaning
+  case "$path" in
+    .|..|./|../) return 1 ;;
+  esac
 
   # Expand ~
   path="${path/#\~/$HOME}"
@@ -358,6 +387,7 @@ _list_aliases() {
     dir) type_label="Directory" ;;
     rel) type_label="Relative" ;;
     url) type_label="URL" ;;
+    cmd) type_label="Command" ;;
     *)   type_label="$type" ;;
   esac
 

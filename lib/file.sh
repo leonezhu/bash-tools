@@ -12,8 +12,46 @@ file() {
 
   case "$cmd" in
     "")
-      echo "Usage: file <alias|path> | file add <alias> <path> | file rm <alias> | file ls" >&2
+      echo "Usage: file <alias|path> | file s [pattern] | file add <alias> <path> | file rm <alias> | file ls" >&2
       return 1
+      ;;
+    s|search)
+      local search_dir search_pattern
+      # Smart argument parsing:
+      # - No args: search current dir, no pattern
+      # - One arg starting with path prefix: search that dir, no pattern
+      # - One arg not a path: search current dir with that pattern
+      # - Two args: first is dir, second is pattern
+      if [[ -z "${2:-}" ]]; then
+        search_dir="."
+        search_pattern=""
+      elif [[ -z "${3:-}" ]]; then
+        # Only one argument provided
+        if [[ "$2" == /* || "$2" == .* || "$2" == ~* ]]; then
+          # Looks like a path
+          search_dir="$2"
+          search_pattern=""
+        else
+          # Try to resolve as alias first
+          local resolved
+          resolved="$(_resolve_alias "$2")"
+          if [[ -n "$resolved" ]]; then
+            search_dir="$resolved"
+            search_pattern=""
+          else
+            # Not an alias, treat as pattern
+            search_dir="."
+            search_pattern="$2"
+          fi
+        fi
+      else
+        # Two arguments: dir and pattern
+        search_dir="$2"
+        search_pattern="$3"
+      fi
+      # Normalize path
+      search_dir="${search_dir/#\~/$HOME}"
+      _search_and_execute "$search_dir" "$search_pattern"
       ;;
     add)
       _add_alias "dir" "$2" "$3"
@@ -31,6 +69,8 @@ file() {
       echo ""
       echo "Usage:"
       echo "  file <alias|path>    - Open directory in Finder"
+      echo "  file s [pattern]     - Search files in current dir"
+      echo "  file s [alias|path] [pattern] - Search files in specified dir"
       echo "  file add <alias> <dir> - Add directory alias"
       echo "                        (paths starting with . are stored as relative)"
       echo "  file rm <alias>      - Remove directory alias"
@@ -49,10 +89,15 @@ file() {
         target="$(_resolve_alias "$cmd")"
       fi
 
+      # Convert relative path to absolute path
+      if [[ -n "$target" && "$target" != /* ]]; then
+        target="$(cd "$(dirname "$target")" 2>/dev/null && pwd)/$(basename "$target")"
+      fi
+
       if [[ -n "$target" ]]; then
         # Auto-add alias for full paths
         if [[ "$is_full_path" == true ]]; then
-          _auto_add_dir_alias "$cmd"
+          _auto_add_dir_alias "$target"
         fi
 
         if [[ -e "$target" ]]; then

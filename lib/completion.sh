@@ -23,6 +23,7 @@ _dir_alias_completion() {
 
   # Subcommands
   subcommands=(
+    's:Search and execute files in directory'
     'add:Add a new directory alias'
     'rm:Remove a directory alias'
     'ls:List all directory aliases'
@@ -44,6 +45,12 @@ _dir_alias_completion() {
       ;;
     args)
       case $line[1] in
+        s|search)
+          if (( CURRENT == 2 )); then
+            _describe 'alias' aliases
+            _files -/
+          fi
+          ;;
         rm)
           _describe 'alias' aliases
           ;;
@@ -275,6 +282,57 @@ _md_completion() {
   esac
 }
 
+# Run command completion function
+_run_completion() {
+  local -a aliases subcommands
+  local context state line
+
+  _arguments -C \
+    '1: :->cmds' \
+    '*::arg:->args'
+
+  # Subcommands
+  subcommands=(
+    'add:Add a new command alias'
+    'rm:Remove a command alias'
+    'ls:List all command aliases'
+    'edit:Edit command in editor'
+    'help:Show help'
+  )
+
+  # Read command aliases
+  if [[ -f "$ALIAS_MAP_FILE" ]]; then
+    local alias_part cmd_part
+    while IFS=: read -r type alias_part cmd_part; do
+      [[ "$type" == "cmd" ]] && aliases+=("${alias_part}:${cmd_part}")
+    done < "$ALIAS_MAP_FILE"
+  fi
+
+  case $state in
+    cmds)
+      _describe 'subcommand' subcommands
+      _describe 'alias' aliases
+      ;;
+    args)
+      case $line[1] in
+        rm)
+          _describe 'alias' aliases
+          ;;
+        add)
+          if (( CURRENT == 2 )); then
+            _message "alias name"
+          else
+            _message "command"
+          fi
+          ;;
+        edit)
+          _describe 'alias' aliases
+          ;;
+      esac
+      ;;
+  esac
+}
+
 # Register completion functions (only when compdef is available)
 if type compdef &>/dev/null; then
   compdef _dir_alias_completion to
@@ -287,4 +345,6 @@ if type compdef &>/dev/null; then
   compdef _todo_completion todo 2>/dev/null || true
   # Register md completion
   compdef _md_completion md
+  # Register run completion (run may be a builtin in some shells)
+  compdef -p _run_completion run 2>/dev/null || true
 fi

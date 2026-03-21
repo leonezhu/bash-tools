@@ -56,9 +56,14 @@ sync() {
         return 1
       fi
 
+      # Convert relative path to absolute path
+      if [[ "$target" != /* ]]; then
+        target="$(cd "$(dirname "$target")" 2>/dev/null && pwd)/$(basename "$target")"
+      fi
+
       # Auto-add alias for full paths
       if [[ "$is_full_path" == true ]]; then
-        _auto_add_dir_alias "$cmd"
+        _auto_add_dir_alias "$target"
       fi
 
       if [[ ! -e "$target" ]]; then

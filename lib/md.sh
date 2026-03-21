@@ -20,6 +20,44 @@ md() {
       _md_usage
       return 1
       ;;
+    s|search)
+      local search_dir search_pattern
+      # Smart argument parsing:
+      # - No args: search current dir, no pattern
+      # - One arg starting with path prefix: search that dir, no pattern
+      # - One arg not a path: search current dir with that pattern
+      # - Two args: first is dir, second is pattern
+      if [[ -z "${2:-}" ]]; then
+        search_dir="."
+        search_pattern=""
+      elif [[ -z "${3:-}" ]]; then
+        # Only one argument provided
+        if [[ "$2" == /* || "$2" == .* || "$2" == ~* ]]; then
+          # Looks like a path
+          search_dir="$2"
+          search_pattern=""
+        else
+          # Try to resolve as alias first
+          local resolved
+          resolved="$(_resolve_alias "$2")"
+          if [[ -n "$resolved" ]]; then
+            search_dir="$resolved"
+            search_pattern=""
+          else
+            # Not an alias, treat as pattern
+            search_dir="."
+            search_pattern="$2"
+          fi
+        fi
+      else
+        # Two arguments: dir and pattern
+        search_dir="$2"
+        search_pattern="$3"
+      fi
+      # Normalize path
+      search_dir="${search_dir/#\~/$HOME}"
+      _search_and_execute "$search_dir" "$search_pattern" "*.md" "_md_open"
+      ;;
     add)
       shift
       _add_alias "dir" "$1" "$2"
@@ -62,6 +100,11 @@ _md_open() {
     if [[ -z "$file_path" ]]; then
       file_path="$target"
     fi
+  fi
+
+  # Convert relative path to absolute path
+  if [[ "$file_path" != /* ]]; then
+    file_path="$(cd "$(dirname "$file_path")" 2>/dev/null && pwd)/$(basename "$file_path")"
   fi
 
   # Check if file exists
@@ -176,6 +219,10 @@ html = f'''<!DOCTYPE html>
       --link-color: #0969da;
       --quote-color: #57606a;
       --toc-bg: #f6f8fa;
+      --meta-bg: #f6f8fa;
+      --meta-label: #57606a;
+      --tag-bg: #ddf4ff;
+      --tag-color: #0969da;
     }}
     @media (prefers-color-scheme: dark) {{
       :root {{
@@ -186,6 +233,10 @@ html = f'''<!DOCTYPE html>
         --link-color: #58a6ff;
         --quote-color: #8b949e;
         --toc-bg: #161b22;
+        --meta-bg: #161b22;
+        --meta-label: #8b949e;
+        --tag-bg: #1f3d5c;
+        --tag-color: #58a6ff;
       }}
     }}
     * {{ box-sizing: border-box; margin: 0; padding: 0; }}
@@ -239,16 +290,101 @@ html = f'''<!DOCTYPE html>
       background: var(--border-color);
       color: var(--text-color);
     }}
+    #toc a.active {{
+      background: var(--link-color);
+      color: #ffffff;
+      font-weight: 500;
+    }}
     #toc a.h1 {{ font-weight: 600; color: var(--text-color); }}
     #toc a.h2 {{ padding-left: 16px; }}
     #toc a.h3 {{ padding-left: 28px; font-size: 13px; }}
     #toc a.h4 {{ padding-left: 40px; font-size: 12px; }}
+    html {{
+      scroll-behavior: smooth;
+    }}
     /* Main Content */
     #main {{
       margin-left: 260px;
       padding: 40px 40px 40px 60px;
       max-width: 900px;
       flex: 1;
+    }}
+    /* Frontmatter/Metadata Styles */
+    .frontmatter {{
+      background: var(--meta-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: 14px;
+    }}
+    .frontmatter-title {{
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--meta-label);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }}
+    .frontmatter-title::before {{
+      content: "";
+      display: inline-block;
+      width: 14px;
+      height: 14px;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%238b949e' stroke-width='2'%3E%3Cpath d='M4 7V4h16v3M9 20h6M12 4v16'/%3E%3C/svg%3E");
+      background-size: contain;
+      background-repeat: no-repeat;
+    }}
+    .frontmatter-grid {{
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 12px;
+    }}
+    .meta-item {{
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }}
+    .meta-label {{
+      font-size: 12px;
+      color: var(--meta-label);
+      font-weight: 500;
+    }}
+    .meta-value {{
+      color: var(--text-color);
+    }}
+    .meta-value.date {{
+      font-variant-numeric: tabular-nums;
+    }}
+    .meta-tags {{
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }}
+    .meta-tag {{
+      display: inline-block;
+      background: var(--tag-bg);
+      color: var(--tag-color);
+      padding: 2px 10px;
+      border-radius: 16px;
+      font-size: 12px;
+    }}
+    .meta-boolean {{
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }}
+    .meta-boolean.true {{ color: #1a7f37; }}
+    .meta-boolean.false {{ color: #cf222e; }}
+    .meta-alias {{
+      background: var(--code-bg);
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-family: 'SF Mono', monospace;
+      font-size: 13px;
     }}
     pre {{
       background: var(--code-bg);
@@ -331,6 +467,7 @@ html = f'''<!DOCTYPE html>
     @media (max-width: 900px) {{
       #toc {{ display: none; }}
       #main {{ margin-left: 0; padding: 20px; }}
+      .frontmatter-grid {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
@@ -341,19 +478,120 @@ html = f'''<!DOCTYPE html>
   </nav>
   <main id="main">
     <div id="loading">Rendering markdown...</div>
+    <div id="frontmatter" class="frontmatter" style="display:none;">
+      <div class="frontmatter-title">Properties</div>
+      <div id="frontmatter-content" class="frontmatter-grid"></div>
+    </div>
     <div id="content"></div>
     <pre id="fallback"></pre>
   </main>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script>
     const mdContent = {content_json};
 
-    function slugify(text) {{
-      return text.toLowerCase()
-        .replace(/[^\\w\\s-]/g, '')
-        .replace(/\\s+/g, '-')
-        .replace(/-+/g, '-')
-        .replace(/^-|-$/g, '');
+    // Parse frontmatter from markdown
+    function parseFrontmatter(content) {{
+      const fmRegex = /^---\\s*\\n([\\s\\S]*?)\\n---\\s*\\n/;
+      const match = content.match(fmRegex);
+      if (!match) return {{ frontmatter: null, content: content }};
+
+      const yamlStr = match[1];
+      const remainingContent = content.slice(match[0].length);
+
+      try {{
+        const frontmatter = jsyaml.load(yamlStr);
+        return {{ frontmatter, content: remainingContent }};
+      }} catch (e) {{
+        console.warn('Failed to parse frontmatter:', e);
+        return {{ frontmatter: null, content: content }};
+      }}
+    }}
+
+    // Format frontmatter value for display
+    function formatValue(key, value) {{
+      if (value === null || value === undefined) {{
+        return '<span class="meta-value">-</span>';
+      }}
+
+      // Handle tags specially
+      const tagKeys = ['tags', 'tag', 'keywords', 'categories'];
+      if (tagKeys.includes(key.toLowerCase())) {{
+        const tags = Array.isArray(value) ? value : [value];
+        const tagsHtml = tags.map(t => `<span class="meta-tag">${{escapeHtml(String(t))}}</span>`).join('');
+        return `<div class="meta-tags">${{tagsHtml}}</div>`;
+      }}
+
+      // Handle boolean
+      if (typeof value === 'boolean') {{
+        const icon = value ? '✓' : '✗';
+        const cls = value ? 'true' : 'false';
+        return `<span class="meta-boolean ${{cls}}">${{icon}} ${{value}}</span>`;
+      }}
+
+      // Handle array
+      if (Array.isArray(value)) {{
+        if (value.length === 0) return '<span class="meta-value">[]</span>';
+        // Check if it's an alias format (common in Obsidian)
+        if (value.every(v => typeof v === 'string')) {{
+          return `<div class="meta-tags">${{value.map(v => `<span class="meta-alias">${{escapeHtml(v)}}</span>`).join('')}}</div>`;
+        }}
+        return `<span class="meta-value">${{escapeHtml(value.join(', '))}}</span>`;
+      }}
+
+      // Handle date-like strings
+      if (typeof value === 'string') {{
+        const datePattern = /^\\d{{4}}-\\d{{2}}-\\d{{2}}/;
+        if (datePattern.test(value)) {{
+          return `<span class="meta-value date">${{escapeHtml(value)}}</span>`;
+        }}
+        // Handle aliases (Obsidian [[]] format)
+        if (value.startsWith('[[') && value.endsWith(']]')) {{
+          const link = value.slice(2, -2);
+          return `<span class="meta-alias">${{escapeHtml(link)}}</span>`;
+        }}
+      }}
+
+      return `<span class="meta-value">${{escapeHtml(String(value))}}</span>`;
+    }}
+
+    function escapeHtml(text) {{
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }}
+
+    // Render frontmatter
+    function renderFrontmatter(frontmatter) {{
+      if (!frontmatter || Object.keys(frontmatter).length === 0) {{
+        return;
+      }}
+
+      const container = document.getElementById('frontmatter-content');
+      let html = '';
+
+      // Define common keys order
+      const priorityKeys = ['title', 'date', 'created', 'updated', 'tags', 'author', 'status', 'type', 'aliases'];
+      const allKeys = Object.keys(frontmatter);
+
+      // Sort: priority keys first, then alphabetical
+      const sortedKeys = [
+        ...priorityKeys.filter(k => k in frontmatter),
+        ...allKeys.filter(k => !priorityKeys.includes(k)).sort()
+      ];
+
+      for (const key of sortedKeys) {{
+        const value = frontmatter[key];
+        html += `
+          <div class="meta-item">
+            <span class="meta-label">${{escapeHtml(key)}}</span>
+            ${{formatValue(key, value)}}
+          </div>
+        `;
+      }}
+
+      container.innerHTML = html;
+      document.getElementById('frontmatter').style.display = 'block';
     }}
 
     function generateTOC(html) {{
@@ -367,28 +605,88 @@ html = f'''<!DOCTYPE html>
         const text = h.textContent;
         const id = 'heading-' + i;
         h.id = id;
-        tocHtml.push('<li><a href="#' + id + '" class="' + h.tagName.toLowerCase() + '">' + text + '</a></li>');
+        h.setAttribute('data-heading', 'true');
+        tocHtml.push('<li><a href="#' + id + '" class="toc-link ' + h.tagName.toLowerCase() + '" data-target="' + id + '">' + text + '</a></li>');
       }});
 
       tocList.innerHTML = tocHtml.join('');
+
+      // Setup scroll spy
+      setupScrollSpy();
+
       return doc.body.innerHTML;
     }}
 
+    function setupScrollSpy() {{
+      const tocLinks = document.querySelectorAll('.toc-link');
+      const headings = document.querySelectorAll('[data-heading="true"]');
+
+      if (headings.length === 0) return;
+
+      // Remove all active states
+      function clearActive() {{
+        tocLinks.forEach(link => link.classList.remove('active'));
+      }}
+
+      // Set active state for a link
+      function setActive(id) {{
+        clearActive();
+        const link = document.querySelector('.toc-link[data-target="' + id + '"]');
+        if (link) {{
+          link.classList.add('active');
+          // Scroll TOC to show active item
+          link.scrollIntoView({{ behavior: 'smooth', block: 'nearest' }});
+        }}
+      }}
+
+      // Use Intersection Observer for better performance
+      const observer = new IntersectionObserver((entries) => {{
+        entries.forEach(entry => {{
+          if (entry.isIntersecting) {{
+            setActive(entry.target.id);
+          }}
+        }});
+      }}, {{
+        rootMargin: '-20% 0px -70% 0px',
+        threshold: 0
+      }});
+
+      headings.forEach(h => observer.observe(h));
+
+      // Also handle click events for immediate feedback
+      tocLinks.forEach(link => {{
+        link.addEventListener('click', (e) => {{
+          const targetId = link.getAttribute('data-target');
+          setActive(targetId);
+        }});
+      }});
+    }}
+
     function render() {{
-      if (typeof marked !== 'undefined') {{
-        document.getElementById('loading').style.display = 'none';
-        let html = marked.parse(mdContent).replace(/src="(?!http|\\/)/g, 'src="content/');
-        html = generateTOC(html);
-        document.getElementById('content').innerHTML = html;
-      }} else {{
+      document.getElementById('loading').style.display = 'none';
+
+      if (typeof marked === 'undefined') {{
         setTimeout(function() {{
           if (typeof marked === 'undefined') {{
-            document.getElementById('loading').style.display = 'none';
             document.getElementById('fallback').textContent = mdContent;
             document.getElementById('fallback').style.display = 'block';
           }}
         }}, 3000);
+        return;
       }}
+
+      // Parse frontmatter
+      const {{ frontmatter, content: bodyContent }} = parseFrontmatter(mdContent);
+
+      // Render frontmatter if exists
+      if (typeof jsyaml !== 'undefined') {{
+        renderFrontmatter(frontmatter);
+      }}
+
+      // Render markdown body
+      let html = marked.parse(bodyContent).replace(/src="(?!http|\\/)/g, 'src="content/');
+      html = generateTOC(html);
+      document.getElementById('content').innerHTML = html;
     }}
 
     if (document.readyState === 'complete') {{
@@ -446,6 +744,8 @@ View Markdown file in browser with beautiful rendering
 
 Usage:
   md <alias|path>       - Open markdown file in browser
+  md s [pattern]        - Search markdown files in current dir
+  md s [alias|path] [pattern] - Search markdown files in specified dir
   md add <alias> <file> - Add markdown file alias
   md rm <alias>         - Remove alias
   md ls                 - List all aliases
@@ -456,6 +756,9 @@ Examples:
   md README.md                    # Open local file
   md ~/Documents/notes/test.md    # Open with full path
   md mydoc                        # Open with alias
+  md s au                         # Search markdown files with 'au' pattern
+  md s . api                      # Search markdown files containing 'api'
+  md s myproject readme           # Search in alias 'myproject'
   md add mydoc ~/docs/mydoc.md    # Add alias
   md stop                         # Stop server
 
@@ -464,5 +767,6 @@ Features:
   - Dark mode support (follows system)
   - Code syntax highlighting
   - Relative image support
+  - Obsidian frontmatter support (YAML metadata)
 EOF
 }
