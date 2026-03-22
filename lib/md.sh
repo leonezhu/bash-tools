@@ -245,16 +245,20 @@ html = f'''<!DOCTYPE html>
       line-height: 1.6;
       color: var(--text-color);
       background: var(--bg-color);
-      display: flex;
     }}
-    /* TOC Sidebar */
+    /* Layout wrapper for centering */
+    .layout {{
+      display: flex;
+      justify-content: center;
+      min-height: 100vh;
+    }}
+    /* TOC Sidebar - positioned next to centered main */
     #toc {{
       position: fixed;
-      left: 0;
+      left: calc(50% - 460px - 220px);
       top: 0;
-      width: 260px;
+      width: 220px;
       height: 100vh;
-      background: var(--toc-bg);
       border-right: 1px solid var(--border-color);
       padding: 20px 16px;
       overflow-y: auto;
@@ -302,12 +306,12 @@ html = f'''<!DOCTYPE html>
     html {{
       scroll-behavior: smooth;
     }}
-    /* Main Content */
+    /* Main Content - centered */
     #main {{
-      margin-left: 260px;
-      padding: 40px 40px 40px 60px;
+      padding: 40px 60px;
       max-width: 900px;
-      flex: 1;
+      width: 900px;
+      min-height: 100vh;
     }}
     /* Frontmatter/Metadata Styles */
     .frontmatter {{
@@ -464,18 +468,18 @@ html = f'''<!DOCTYPE html>
       font-family: monospace;
     }}
     /* Mobile: hide TOC */
-    @media (max-width: 900px) {{
+    @media (max-width: 1200px) {{
       #toc {{ display: none; }}
-      #main {{ margin-left: 0; padding: 20px; }}
+      #main {{ width: 100%; max-width: 100%; padding: 20px; }}
       .frontmatter-grid {{ grid-template-columns: 1fr; }}
     }}
   </style>
 </head>
 <body>
   <nav id="toc">
-    <h2>Contents</h2>
     <ul id="toc-list"></ul>
   </nav>
+  <div class="layout">
   <main id="main">
     <div id="loading">Rendering markdown...</div>
     <div id="frontmatter" class="frontmatter" style="display:none;">
@@ -485,8 +489,10 @@ html = f'''<!DOCTYPE html>
     <div id="content"></div>
     <pre id="fallback"></pre>
   </main>
-  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  </div>
+  <link rel="preconnect" href="https://unpkg.com">
+  <script src="https://unpkg.com/marked@12/marked.min.js"></script>
+  <script src="https://unpkg.com/js-yaml@4/dist/js-yaml.min.js"></script>
   <script>
     const mdContent = {content_json};
 
@@ -639,19 +645,39 @@ html = f'''<!DOCTYPE html>
         }}
       }}
 
-      // Use Intersection Observer for better performance
-      const observer = new IntersectionObserver((entries) => {{
-        entries.forEach(entry => {{
-          if (entry.isIntersecting) {{
-            setActive(entry.target.id);
+      // Find current active heading based on scroll position
+      function updateActiveHeading() {{
+        let currentHeading = null;
+        let minTop = Infinity;
+
+        headings.forEach(h => {{
+          const rect = h.getBoundingClientRect();
+          // Find heading that is at or above 120px from viewport top
+          if (rect.top <= 120 && rect.top < minTop) {{
+            minTop = rect.top;
+            currentHeading = h;
           }}
         }});
-      }}, {{
-        rootMargin: '-20% 0px -70% 0px',
-        threshold: 0
+
+        if (currentHeading) {{
+          setActive(currentHeading.id);
+        }}
+      }}
+
+      // Throttle scroll events
+      let ticking = false;
+      window.addEventListener('scroll', () => {{
+        if (!ticking) {{
+          window.requestAnimationFrame(() => {{
+            updateActiveHeading();
+            ticking = false;
+          }});
+          ticking = true;
+        }}
       }});
 
-      headings.forEach(h => observer.observe(h));
+      // Initial update
+      updateActiveHeading();
 
       // Also handle click events for immediate feedback
       tocLinks.forEach(link => {{
