@@ -51,6 +51,19 @@ Aliases are skipped silently if they already exist.
 | `md`    | View markdown in browser | Yes | /, ./, ~, ../  | Yes        |
 | `path`  | Copy path to clipboard | Yes | /, ./, ~, ../  | Yes        |
 | `run`   | Execute saved cmd    | Yes   | N/A              | N/A        |
+| `ob`    | Obsidian search/open | N/A   | N/A              | N/A        |
+
+### Obsidian Command (`ob`)
+
+```bash
+ob s <query>    # Search notes, auto-open if single result
+ob <file>       # Open file directly
+```
+
+Examples:
+- `ob s 网页访问方式评估` - Search notes, shows list if multiple results
+- `ob s file:网页访问` - Search with file filter for precise match
+- `ob References/note.md` - Open specific file
 
 ### Search Subcommand (`s`)
 

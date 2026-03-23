@@ -333,6 +333,30 @@ _run_completion() {
   esac
 }
 
+# OB (Obsidian) command completion function
+_ob_completion() {
+  local -a subcommands
+  local context state line
+
+  _arguments -C \
+    '1: :->cmds' \
+    '*::arg:->args'
+
+  # Subcommands
+  subcommands=(
+    's:Search notes, auto-open if single result'
+  )
+
+  case $state in
+    cmds)
+      _describe 'subcommand' subcommands
+      ;;
+    args)
+      # No special completion for search query or file path
+      ;;
+  esac
+}
+
 # Register completion functions (only when compdef is available)
 if type compdef &>/dev/null; then
   compdef _dir_alias_completion to
@@ -348,4 +372,6 @@ if type compdef &>/dev/null; then
   compdef _md_completion md
   # Register run completion (run may be a builtin in some shells)
   compdef -p _run_completion run 2>/dev/null || true
+  # Register ob completion (use -p to override existing)
+  compdef -p _ob_completion ob 2>/dev/null || true
 fi

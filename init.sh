@@ -34,6 +34,7 @@ source "$BASH_TOOLS_DIR/lib/todo.sh"
 source "$BASH_TOOLS_DIR/lib/md.sh"
 source "$BASH_TOOLS_DIR/lib/run.sh"
 source "$BASH_TOOLS_DIR/lib/path.sh"
+source "$BASH_TOOLS_DIR/lib/ob.sh"
 
 # Load completion (zsh only)
 if [[ -n "${ZSH_VERSION:-}" ]]; then
