@@ -6,16 +6,58 @@
 #   ob <file>        - Open file directly
 #   ob               - Show help
 
+# Vault path - adjust if your vault is elsewhere
+: "${OBSIDIAN_VAULT:="$HOME/Documents/GitHub/notes"}"
+
+# Simple URL encoder (minimal, for paths)
+_url_encode() {
+  local string="$1"
+  # Keep simple - only replace spaces and special characters commonly in file paths
+  printf '%s' "$string" | sed 's/ /%20/g; s/&/%26/g; s/#/%23/g; s/?/%3F/g'
+}
+
+# Convert file path to obsidian:// URI format
+_obsidian_uri() {
+  local file="$1"
+  local vault_name
+  vault_name=$(basename "$OBSIDIAN_VAULT")
+
+  # Get path relative to vault
+  local rel_path="${file#$OBSIDIAN_VAULT/}"
+
+  # URL encode the path
+  local encoded_path
+  encoded_path=$(_url_encode "$rel_path")
+
+  echo "obsidian://open?vault=${vault_name}&file=${encoded_path}"
+}
+
+# Search markdown files using ripgrep
+_ob_search() {
+  local query="$1"
+  local results
+
+  if command -v rg &>/dev/null; then
+    results=$(rg -l -i "$query" "$OBSIDIAN_VAULT" --type md 2>/dev/null)
+  else
+    results=$(find "$OBSIDIAN_VAULT" -type f -iname "*.md" -exec grep -l -i "$query" {} \; 2>/dev/null)
+  fi
+
+  echo "$results"
+}
+
 ob() {
   local cmd="${1:-}"
 
   case "$cmd" in
     "")
-      echo "Obsidian CLI wrapper"
+      echo "Obsidian CLI wrapper (using obsidian:// URI scheme)"
       echo ""
       echo "Usage:"
       echo "  ob s <query>   - Search notes with fzf selector"
       echo "  ob <file>      - Open file directly"
+      echo ""
+      echo "Vault path: Set OBSIDIAN_VAULT env var (default: ~/Documents/GitHub/notes)"
       ;;
     s|search)
       if [[ -z "${2:-}" ]]; then
@@ -30,13 +72,9 @@ ob() {
         query="$query $*"
       fi
 
-      # Run search and capture output
-      local search_output
-      search_output=$(obsidian search query="$query" 2>&1)
-
-      # Filter out warning/info lines (keep only file paths)
+      # Run search
       local results
-      results=$(echo "$search_output" | grep -v "^202[0-9]-" | grep -v "Loading updated app package" | grep -v "installer is out of date" | grep -v "^$" || true)
+      results=$(_ob_search "$query")
 
       # Check if we have results
       if [[ -z "$results" ]]; then
@@ -53,7 +91,7 @@ ob() {
         local file_path
         file_path=$(echo "$results" | head -1)
         echo "Opening: $file_path"
-        obsidian open file="$file_path" 2>&1 | grep -v "^202[0-9]-" | grep -v "Loading updated app package" | grep -v "installer is out of date" || true
+        open -g "$(_obsidian_uri "$file_path")"
       else
         # Multiple results - use fzf selector
         if ! command -v fzf &>/dev/null; then
@@ -69,7 +107,7 @@ ob() {
 
         if [[ -n "$selected" ]]; then
           echo "Opening: $selected"
-          obsidian open file="$selected" 2>&1 | grep -v "^202[0-9]-" | grep -v "Loading updated app package" | grep -v "installer is out of date" || true
+          open -g "$(_obsidian_uri "$selected")"
         fi
       fi
       ;;
@@ -78,7 +116,29 @@ ob() {
       ;;
     *)
       # Treat as file path to open
-      obsidian open file="$cmd" 2>&1 | grep -v "^202[0-9]-" | grep -v "Loading updated app package" | grep -v "installer is out of date" || true
+      local file_path="$cmd"
+
+      # If not absolute path, look in current directory or vault
+      if [[ ! "$file_path" = /* ]]; then
+        if [[ -f "$file_path" ]]; then
+          file_path="$(pwd)/$file_path"
+        elif [[ -f "$OBSIDIAN_VAULT/$file_path" ]]; then
+          file_path="$OBSIDIAN_VAULT/$file_path"
+        elif [[ -f "$OBSIDIAN_VAULT/$cmd.md" ]]; then
+          file_path="$OBSIDIAN_VAULT/$cmd.md"
+        else
+          echo "File not found: $cmd" >&2
+          return 1
+        fi
+      fi
+
+      if [[ -f "$file_path" ]]; then
+        echo "Opening: $file_path"
+        open -g "$(_obsidian_uri "$file_path")"
+      else
+        echo "File not found: $file_path" >&2
+        return 1
+      fi
       ;;
   esac
 }

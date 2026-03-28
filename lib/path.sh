@@ -72,7 +72,13 @@ path() {
 _path_copy() {
   local target="$1"
   local is_full_path=false
+  local should_auto_alias=true
   local file_path
+
+  # Skip auto-alias for special paths
+  case "$target" in
+    .|..) should_auto_alias=false ;;
+  esac
 
   # Check if it's a full path
   if [[ "$target" == /* || "$target" == .* || "$target" == ~* ]]; then
@@ -98,8 +104,8 @@ _path_copy() {
     return 1
   fi
 
-  # Auto-add alias for full paths
-  if [[ "$is_full_path" == true ]]; then
+  # Auto-add alias for full paths (skip special paths like . and ..)
+  if [[ "$is_full_path" == true && "$should_auto_alias" == true ]]; then
     _auto_add_dir_alias "$file_path"
   fi
 
