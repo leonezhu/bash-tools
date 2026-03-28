@@ -104,7 +104,13 @@ _md_open() {
 
   # Convert relative path to absolute path
   if [[ "$file_path" != /* ]]; then
-    file_path="$(cd "$(dirname "$file_path")" 2>/dev/null && pwd)/$(basename "$file_path")"
+    if [[ -d "$file_path" ]]; then
+      # For directories, use cd + pwd
+      file_path="$(cd "$file_path" 2>/dev/null && pwd)"
+    else
+      # For files, use dirname + basename
+      file_path="$(cd "$(dirname "$file_path")" 2>/dev/null && pwd)/$(basename "$file_path")"
+    fi
   fi
 
   # Check if file exists

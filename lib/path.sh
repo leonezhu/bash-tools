@@ -72,13 +72,7 @@ path() {
 _path_copy() {
   local target="$1"
   local is_full_path=false
-  local should_auto_alias=true
   local file_path
-
-  # Skip auto-alias for special paths
-  case "$target" in
-    .|..) should_auto_alias=false ;;
-  esac
 
   # Check if it's a full path
   if [[ "$target" == /* || "$target" == .* || "$target" == ~* ]]; then
@@ -95,7 +89,13 @@ _path_copy() {
 
   # Convert relative path to absolute path
   if [[ "$file_path" != /* ]]; then
-    file_path="$(cd "$(dirname "$file_path")" 2>/dev/null && pwd)/$(basename "$file_path")"
+    if [[ -d "$file_path" ]]; then
+      # For directories, use cd + pwd
+      file_path="$(cd "$file_path" 2>/dev/null && pwd)"
+    else
+      # For files, use dirname + basename
+      file_path="$(cd "$(dirname "$file_path")" 2>/dev/null && pwd)/$(basename "$file_path")"
+    fi
   fi
 
   # Check if path exists
@@ -104,8 +104,8 @@ _path_copy() {
     return 1
   fi
 
-  # Auto-add alias for full paths (skip special paths like . and ..)
-  if [[ "$is_full_path" == true && "$should_auto_alias" == true ]]; then
+  # Auto-add alias for full paths (after converting to absolute path)
+  if [[ "$is_full_path" == true ]]; then
     _auto_add_dir_alias "$file_path"
   fi
 

@@ -79,12 +79,6 @@ to() {
     *)
       local target
       local is_full_path=false
-      local should_auto_alias=true
-
-      # Skip auto-alias for special paths
-      case "$cmd" in
-        .|..) should_auto_alias=false ;;
-      esac
 
       # Check if it's a full path (starts with /, ./, ~, or ../)
       if [[ "$cmd" == /* || "$cmd" == .* || "$cmd" == ~* ]]; then
@@ -97,12 +91,18 @@ to() {
 
       # Convert relative path to absolute path
       if [[ -n "$target" && "$target" != /* ]]; then
-        target="$(cd "$(dirname "$target")" 2>/dev/null && pwd)/$(basename "$target")"
+        if [[ -d "$target" ]]; then
+          # For directories, use cd + pwd
+          target="$(cd "$target" 2>/dev/null && pwd)"
+        else
+          # For files, use dirname + basename
+          target="$(cd "$(dirname "$target")" 2>/dev/null && pwd)/$(basename "$target")"
+        fi
       fi
 
       if [[ -n "$target" ]]; then
-        # Auto-add alias for full paths (skip special paths like . and ..)
-        if [[ "$is_full_path" == true && "$should_auto_alias" == true ]]; then
+        # Auto-add alias for full paths (after converting to absolute path)
+        if [[ "$is_full_path" == true ]]; then
           _auto_add_dir_alias "$target"
         fi
 

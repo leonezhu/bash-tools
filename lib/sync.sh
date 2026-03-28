@@ -58,7 +58,13 @@ sync() {
 
       # Convert relative path to absolute path
       if [[ "$target" != /* ]]; then
-        target="$(cd "$(dirname "$target")" 2>/dev/null && pwd)/$(basename "$target")"
+        if [[ -d "$target" ]]; then
+          # For directories, use cd + pwd
+          target="$(cd "$target" 2>/dev/null && pwd)"
+        else
+          # For files, use dirname + basename
+          target="$(cd "$(dirname "$target")" 2>/dev/null && pwd)/$(basename "$target")"
+        fi
       fi
 
       # Auto-add alias for full paths
