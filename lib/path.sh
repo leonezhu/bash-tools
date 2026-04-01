@@ -74,15 +74,25 @@ _path_copy() {
   local is_full_path=false
   local file_path
 
-  # Check if it's a full path
-  if [[ "$target" == /* || "$target" == .* || "$target" == ~* ]]; then
+  # Try alias resolution first (for all inputs)
+  file_path="$(_resolve_alias "$target")"
+  if [[ -n "$file_path" ]]; then
+    is_full_path=false
+  elif [[ "$target" == /* || "$target" == ~* ]]; then
     file_path="${target/#\~/$HOME}"
     is_full_path=true
-  else
-    # Try to resolve alias
-    file_path="$(_resolve_alias "$target")"
-    # If alias not found, treat as relative path
-    if [[ -z "$file_path" ]]; then
+  elif [[ "$target" == .* ]]; then
+    local stripped="${target/#./}"
+    stripped="${stripped/#../}"
+    stripped="${stripped/#.}"
+    file_path="$(_resolve_alias "$stripped")"
+    if [[ -n "$file_path" ]]; then
+      is_full_path=false
+    else
+      file_path="$target"
+      is_full_path=true
+    fi
+  fi
       file_path="$target"
     fi
   fi

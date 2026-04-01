@@ -41,13 +41,24 @@ sync() {
       local target
       local is_full_path=false
 
-      # Check if it's a full path (starts with /, ./, ~, or ../)
-      if [[ "$cmd" == /* || "$cmd" == .* || "$cmd" == ~* ]]; then
+      # Try alias resolution first (for all inputs)
+      target="$(_resolve_alias "$cmd")"
+      if [[ -n "$target" ]]; then
+        is_full_path=false
+      elif [[ "$cmd" == /* || "$cmd" == ~* ]]; then
         target="${cmd/#\~/$HOME}"
         is_full_path=true
-      else
-        # Try to resolve alias
-        target="$(_resolve_alias "$cmd")"
+      elif [[ "$cmd" == .* ]]; then
+        local stripped="${cmd/#./}"
+        stripped="${stripped/#../}"
+        stripped="${stripped/#.}"
+        target="$(_resolve_alias "$stripped")"
+        if [[ -n "$target" ]]; then
+          is_full_path=false
+        elif [[ -e "$cmd" ]]; then
+          target="$cmd"
+          is_full_path=true
+        fi
       fi
 
       if [[ -z "$target" ]]; then
@@ -67,14 +78,14 @@ sync() {
         fi
       fi
 
-      # Auto-add alias for full paths
-      if [[ "$is_full_path" == true ]]; then
-        _auto_add_dir_alias "$target"
-      fi
-
       if [[ ! -e "$target" ]]; then
         echo "Path does not exist: $target" >&2
         return 1
+      fi
+
+      # Auto-add alias for full paths (only if path exists)
+      if [[ "$is_full_path" == true ]]; then
+        _auto_add_dir_alias "$target"
       fi
 
       # If target is a file, use its parent directory

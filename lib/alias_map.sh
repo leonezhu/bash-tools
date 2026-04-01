@@ -143,7 +143,7 @@ _alias_exists() {
   local type="$1"
   local alias="$2"
   _ensure_alias_file
-  grep -q "^${type}:${alias}:" "$ALIAS_MAP_FILE" 2>/dev/null
+  grep -qF "${type}:${alias}:" "$ALIAS_MAP_FILE" 2>/dev/null
 }
 
 # Add alias (prompts for confirmation if already exists)
@@ -287,6 +287,9 @@ _extract_path_alias() {
   # Get the last path segment
   path="${path##*/}"
 
+  # Strip leading dots (dotfiles like .agents shouldn't create dotted aliases)
+  path="${path#.}"
+
   # Return lowercase alias (compatible with bash and zsh)
   /usr/bin/tr '[:upper:]' '[:lower:]' <<< "$path"
 }
@@ -363,8 +366,19 @@ _auto_add_dir_alias() {
     stored_path="$(cd "$(dirname "$path")" 2>/dev/null && pwd)/$(basename "$path")"
   fi
 
-  # Check if already exists (check both dir and rel)
-  if _alias_exists "dir" "$alias" || _alias_exists "rel" "$alias"; then
+  # Check if already exists (check both dir and rel, with and without leading dot)
+  if _alias_exists "dir" "$alias" || _alias_exists "rel" "$alias" || \
+     _alias_exists "dir" ".${alias}" || _alias_exists "rel" ".${alias}"; then
+    return 1
+  fi
+
+  # Skip if path doesn't exist
+  if [[ ! -e "$stored_path" ]]; then
+    return 1
+  fi
+
+  # Skip if the same path is already stored under a different alias
+  if grep -qF ":${stored_path}" "$ALIAS_MAP_FILE" 2>/dev/null; then
     return 1
   fi
 

@@ -27,19 +27,19 @@ to() {
         search_pattern=""
       elif [[ -z "${3:-}" ]]; then
         # Only one argument provided
-        if [[ "$2" == /* || "$2" == .* || "$2" == ~* ]]; then
-          # Looks like a path
+        if [[ "$2" == /* || "$2" == ~* ]]; then
           search_dir="$2"
           search_pattern=""
         else
-          # Try to resolve as alias first
           local resolved
           resolved="$(_resolve_alias "$2")"
           if [[ -n "$resolved" ]]; then
             search_dir="$resolved"
             search_pattern=""
+          elif [[ "$2" == .* && -e "$2" ]]; then
+            search_dir="$2"
+            search_pattern=""
           else
-            # Not an alias, treat as pattern
             search_dir="."
             search_pattern="$2"
           fi
@@ -80,13 +80,24 @@ to() {
       local target
       local is_full_path=false
 
-      # Check if it's a full path (starts with /, ./, ~, or ../)
-      if [[ "$cmd" == /* || "$cmd" == .* || "$cmd" == ~* ]]; then
+      # Try alias resolution first (for all inputs)
+      target="$(_resolve_alias "$cmd")"
+      if [[ -n "$target" ]]; then
+        is_full_path=false
+      elif [[ "$cmd" == /* || "$cmd" == ~* ]]; then
         target="${cmd/#\~/$HOME}"
         is_full_path=true
-      else
-        # Try to resolve alias
-        target="$(_resolve_alias "$cmd")"
+      elif [[ "$cmd" == .* ]]; then
+        local stripped="${cmd/#./}"
+        stripped="${stripped/#../}"
+        stripped="${stripped/#.}"
+        target="$(_resolve_alias "$stripped")"
+        if [[ -n "$target" ]]; then
+          is_full_path=false
+        elif [[ -e "$cmd" ]]; then
+          target="$cmd"
+          is_full_path=true
+        fi
       fi
 
       # Convert relative path to absolute path
@@ -101,12 +112,12 @@ to() {
       fi
 
       if [[ -n "$target" ]]; then
-        # Auto-add alias for full paths (after converting to absolute path)
-        if [[ "$is_full_path" == true ]]; then
-          _auto_add_dir_alias "$target"
-        fi
-
         if [[ -e "$target" ]]; then
+          # Auto-add alias for full paths (only if path exists)
+          if [[ "$is_full_path" == true ]]; then
+            _auto_add_dir_alias "$target"
+          fi
+
           # If target is a file, cd to its parent directory
           if [[ -f "$target" ]]; then
             cd "$(dirname "$target")"
