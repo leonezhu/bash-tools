@@ -93,9 +93,6 @@ _path_copy() {
       is_full_path=true
     fi
   fi
-      file_path="$target"
-    fi
-  fi
 
   # Convert relative path to absolute path
   if [[ "$file_path" != /* ]]; then

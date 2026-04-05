@@ -108,11 +108,6 @@ _md_open() {
       is_full_path=true
     fi
   fi
-    # If alias not found, treat as relative path
-    if [[ -z "$file_path" ]]; then
-      file_path="$target"
-    fi
-  fi
 
   # Convert relative path to absolute path
   if [[ "$file_path" != /* ]]; then
