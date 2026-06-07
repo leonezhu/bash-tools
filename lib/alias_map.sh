@@ -9,6 +9,9 @@
 # Data file path
 ALIAS_MAP_FILE="${ALIAS_MAP_FILE:-$HOME/.alias_map}"
 
+# Auto-add alias when using full paths/URLs (set to "false" to disable)
+AUTO_ADD_ALIAS="${AUTO_ADD_ALIAS:-true}"
+
 # Ensure data file exists
 _ensure_alias_file() {
   if [[ ! -f "$ALIAS_MAP_FILE" ]]; then
@@ -276,6 +279,7 @@ _extract_url_alias() {
 }
 
 # Extract alias name from path (last path segment, lowercase)
+# For date-like filenames (YYYY-MM-DD), prepends parent directory name
 # Usage: _extract_path_alias <path>
 # Returns: suggested alias name (lowercase)
 _extract_path_alias() {
@@ -285,13 +289,22 @@ _extract_path_alias() {
   path="${path%/}"
 
   # Get the last path segment
-  path="${path##*/}"
+  local name="${path##*/}"
 
   # Strip leading dots (dotfiles like .agents shouldn't create dotted aliases)
-  path="${path#.}"
+  name="${name#.}"
+
+  # If filename starts with date pattern (YYYY-MM-DD), prepend parent dir name
+  if [[ "$name" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2} ]]; then
+    local parent="${path%/*}"
+    parent="${parent##*/}"
+    if [[ -n "$parent" ]]; then
+      name="${parent}-${name}"
+    fi
+  fi
 
   # Return lowercase alias (compatible with bash and zsh)
-  /usr/bin/tr '[:upper:]' '[:lower:]' <<< "$path"
+  /usr/bin/tr '[:upper:]' '[:lower:]' <<< "$name"
 }
 
 # Auto-add URL alias (silent, skips if exists)
@@ -301,6 +314,8 @@ _auto_add_url_alias() {
   local url="$1"
   local alias
   local clean_url
+
+  [[ "$AUTO_ADD_ALIAS" == "true" ]] || return 1
 
   if [[ -z "$url" ]]; then
     return 1
@@ -317,12 +332,17 @@ _auto_add_url_alias() {
     return 1
   fi
 
-  # Check if already exists
+  # Check if alias already exists
   if _alias_exists "url" "$alias"; then
     return 1
   fi
 
-  # Add silently
+  # Skip if the same URL is already stored under a different alias
+  if grep -q ":${clean_url}$" "$ALIAS_MAP_FILE" 2>/dev/null; then
+    return 1
+  fi
+
+  # Add
   _ensure_alias_file
   echo "url:${alias}:${clean_url}" >> "$ALIAS_MAP_FILE"
   echo "Auto-added URL alias: $alias -> $clean_url"
@@ -334,20 +354,27 @@ _auto_add_url_alias() {
 # Returns: 0 if added, 1 if skipped (already exists or invalid)
 _auto_add_dir_alias() {
   local path="$1"
+  local original="${2:-}"
   local alias
+
+  [[ "$AUTO_ADD_ALIAS" == "true" ]] || return 1
 
   if [[ -z "$path" ]]; then
     return 1
   fi
 
-  # Skip special paths that shouldn't be aliased
-  # ., .., ./, ../, and similar relative paths have no persistent meaning
-  case "$path" in
-    .|..|./|../) return 1 ;;
+  # Skip relative navigation commands that shouldn't create aliases
+  case "$original" in
+    .|..|./|../|~) return 1 ;;
   esac
 
   # Expand ~
   path="${path/#\~/$HOME}"
+
+  # Skip home directory (from `to ~` or `to .` in home)
+  if [[ "$path" == "$HOME" ]]; then
+    return 1
+  fi
 
   alias=$(_extract_path_alias "$path")
 
@@ -378,7 +405,7 @@ _auto_add_dir_alias() {
   fi
 
   # Skip if the same path is already stored under a different alias
-  if grep -qF ":${stored_path}" "$ALIAS_MAP_FILE" 2>/dev/null; then
+  if grep -q ":${stored_path}$" "$ALIAS_MAP_FILE" 2>/dev/null; then
     return 1
   fi
 

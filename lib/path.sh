@@ -113,7 +113,7 @@ _path_copy() {
 
   # Auto-add alias for full paths (after converting to absolute path)
   if [[ "$is_full_path" == true ]]; then
-    _auto_add_dir_alias "$file_path"
+    _auto_add_dir_alias "$file_path" "$target"
   fi
 
   # Copy to clipboard

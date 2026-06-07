@@ -133,7 +133,7 @@ _md_open() {
 
   # Auto-add alias for full paths
   if [[ "$is_full_path" == true ]]; then
-    _auto_add_dir_alias "$file_path"
+    _auto_add_dir_alias "$file_path" "$target"
   fi
 
   # Start server and open browser

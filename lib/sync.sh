@@ -85,7 +85,7 @@ sync() {
 
       # Auto-add alias for full paths (only if path exists)
       if [[ "$is_full_path" == true ]]; then
-        _auto_add_dir_alias "$target"
+        _auto_add_dir_alias "$target" "$cmd"
       fi
 
       # If target is a file, use its parent directory

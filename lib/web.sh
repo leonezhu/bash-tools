@@ -69,6 +69,7 @@ web() {
         curl -L -o "$dest_path" "$url"
       else
         open "$url"
+        echo "Opened: $url"
       fi
       ;;
   esac

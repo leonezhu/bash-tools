@@ -115,14 +115,16 @@ file() {
         if [[ -e "$target" ]]; then
           # Auto-add alias for full paths (only if path exists)
           if [[ "$is_full_path" == true ]]; then
-            _auto_add_dir_alias "$target"
+            _auto_add_dir_alias "$target" "$cmd"
           fi
 
           # Use -R to reveal file in Finder, or open directory directly
           if [[ -f "$target" ]]; then
             open -R "$target"
+            echo "Revealed in Finder: $target"
           else
             open "$target"
+            echo "Opened in Finder: $target"
           fi
         else
           echo "Path does not exist: $target" >&2

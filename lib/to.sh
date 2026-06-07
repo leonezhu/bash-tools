@@ -115,7 +115,7 @@ to() {
         if [[ -e "$target" ]]; then
           # Auto-add alias for full paths (only if path exists)
           if [[ "$is_full_path" == true ]]; then
-            _auto_add_dir_alias "$target"
+            _auto_add_dir_alias "$target" "$cmd"
           fi
 
           # If target is a file, cd to its parent directory
@@ -124,6 +124,7 @@ to() {
           else
             cd "$target"
           fi
+          echo "→ $PWD"
         else
           echo "Path does not exist: $target" >&2
           return 1
