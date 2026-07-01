@@ -167,7 +167,7 @@ Tasks are stored in `~/.todo_list.json`:
 Customize storage locations via environment variables:
 
 ```bash
-export ALIAS_MAP_FILE=~/.config/bash-tools/aliases
+export ALIAS_MAP_FILE=~/.config/bash-tools/.alias_map
 export TODO_FILE=~/.config/bash-tools/todo.json
 ```
 

@@ -363,9 +363,13 @@ _auto_add_dir_alias() {
     return 1
   fi
 
-  # Skip relative navigation commands that shouldn't create aliases
+  # Skip relative navigation that shouldn't create aliases.
+  # NOTE: "." and "./" are intentionally NOT skipped here — they resolve to
+  # the current directory, which is usually a real project worth aliasing by
+  # its basename (e.g. `dev .` inside speakeasy -> alias "speakeasy").
+  # The home directory is still blocked by the explicit $HOME check below.
   case "$original" in
-    .|..|./|../|~) return 1 ;;
+    ..|../|~) return 1 ;;
   esac
 
   # Expand ~
