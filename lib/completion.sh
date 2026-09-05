@@ -77,6 +77,7 @@ _url_alias_completion() {
 
   # Subcommands
   subcommands=(
+    'repo:Open repo web page (alias/path, optional subpath)'
     'add:Add a new URL alias'
     'rm:Remove a URL alias'
     'ls:List all URL aliases'
@@ -91,6 +92,15 @@ _url_alias_completion() {
     done < "$ALIAS_MAP_FILE"
   fi
 
+  # Read directory aliases for repo subcommand (alias:path)
+  local -a dir_aliases
+  if [[ -f "$ALIAS_MAP_FILE" ]]; then
+    local alias_part2 path_part2
+    while IFS=: read -r type alias_part2 path_part2; do
+      [[ "$type" == "dir" || "$type" == "rel" ]] && dir_aliases+=("${alias_part2}:${path_part2}")
+    done < "$ALIAS_MAP_FILE"
+  fi
+
   case $state in
     cmds)
       _describe 'subcommand' subcommands
@@ -98,6 +108,12 @@ _url_alias_completion() {
       ;;
     args)
       case $line[1] in
+        repo)
+          if (( CURRENT == 2 )); then
+            _describe 'directory alias' dir_aliases
+            _files -/
+          fi
+          ;;
         rm)
           _describe 'alias' aliases
           ;;
