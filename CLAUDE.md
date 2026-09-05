@@ -44,6 +44,7 @@ Aliases are skipped silently if they already exist.
 | Command | Purpose              | Alias | Full Path/URL    | Auto-Alias |
 |---------|----------------------|-------|------------------|------------|
 | `web`   | Open URL             | Yes   | http/https URLs  | Yes        |
+| `web repo` | Open repo's GitHub page | N/A | alias/path + subpath | No (subpath) |
 | `to`    | Navigate to dir      | Yes   | /, ./, ~, ../    | Yes        |
 | `dev`   | Open in VS Code      | Yes   | /, ./, ~, ../    | Yes        |
 | `file`  | Open in Finder       | Yes   | /, ./, ~, ../    | Yes        |

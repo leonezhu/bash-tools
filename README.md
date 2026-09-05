@@ -90,6 +90,21 @@ web rm gh                      # Remove alias
 web ls                         # List all URL aliases
 ```
 
+#### web repo - Open Repository's GitHub Page
+
+```bash
+web repo                       # Current directory's repo
+web repo notes                 # Repo by directory alias
+web repo ~/projects/myapp      # Repo by full path
+web repo . README.md           # Open file on current branch (blob view)
+web repo notes References      # Open directory (tree view)
+```
+
+- Works from any subdirectory inside the repo (finds the git toplevel)
+- Converts remote URL to web URL: `git@`/`ssh://`/`http://`/`https://` all → `https://`
+- Subpath opens under the current branch (short SHA when detached)
+- No auto-alias when subpath is given
+
 ### todo - Task Management
 
 Simple task management with priorities and groups.
